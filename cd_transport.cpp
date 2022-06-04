@@ -11,6 +11,11 @@ CdTransport::CdTransport(CircularBlockingQueue<int16_t> *data_out)
 	this->data_out = data_out;
 }
 
+void CdTransport::set_status_callback(std::function<void(TransportStatus)> callbk)
+{
+	this->status_callback = callbk;
+}
+
 void CdTransport::wait_for_disc()
 {
 	bool have_cd = false;
@@ -65,9 +70,16 @@ void CdTransport::play()
 {
 	int16_t deemph_buf[SAMPLES_PER_CD_FRAME];
 	while (this->read_cursor < this->disc_last_lsn) {
+		int tr = cdio_cddap_sector_gettrack(drive, this->read_cursor);
 		if (this->deemph_mode == AUTO) {
-			int tr = cdio_cddap_sector_gettrack(drive, this->read_cursor);
 			this->deemph.enabled = this->track_has_preemph[tr];
+		}
+		if (this->status_callback) {
+			TransportStatus status;
+			status.track_num = tr;
+			this->get_track_min_sec(tr, &status.track_min, &status.track_sec);
+			status.deemph_active = this->deemph.enabled;
+			this->status_callback(status);
 		}
 		int16_t *p_readbuf = cdio_paranoia_read_limited(paranoia, NULL, 3 /*retries*/);
 		if (!p_readbuf) {
@@ -119,6 +131,14 @@ void CdTransport::set_deemph_mode(DeemphMode mode)
 	} else if (mode == OFF) {
 		this->deemph.enabled = false;
 	}
+}
+
+void CdTransport::get_track_min_sec(int cur_tr, int *min, int *sec)
+{
+	lsn_t lsn_offs = this->read_cursor - this->track_first_lsns[cur_tr];
+	*sec = (lsn_offs * SAMPLES_PER_CD_FRAME - this->data_out->get_count()) / 88200;
+	*min = *sec / 60;
+	*sec = *sec % 60;
 }
 
 CdTransport::~CdTransport()

@@ -24,9 +24,17 @@
 
 CdPlayer player;
 
-void get_min_sec(int time_sec, int *min, int *sec) {
-	*min = time_sec / 60;
-	*sec = time_sec - (*min * 60);
+void print_status_msg()
+{
+	std::cout << (player.paused ? "paused " : "playing ");
+	std::cout << "track " << player.cur_track << " ";
+	std::cout << player.track_min << ":";
+	int s = player.track_sec;
+	std::cout << (s < 10 ? "0" : "") << s;
+	if (player.deemph_active) {
+		std::cout << " deemph";
+	}
+	std::cout << std::endl;
 }
 
 void read_cmds()
@@ -65,6 +73,8 @@ void read_cmds()
 			if (track_num > 0) {
 				player.seek_track(track_num);
 			}
+		} else if (cmd == "status") {
+			print_status_msg();
 		}
 		line.clear();
 	}

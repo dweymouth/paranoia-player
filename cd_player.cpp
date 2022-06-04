@@ -1,6 +1,22 @@
 #include "cd_player.h"
 #include <iostream>
 
+CdPlayer::CdPlayer() :
+	data_buf(SAMPLES_PER_CD_FRAME * 75 * 5),
+	transport(&this->data_buf),
+	audio_out(&this->data_buf)
+{
+	this->transport.set_status_callback(std::bind(&CdPlayer::transport_status_callback, this, std::placeholders::_1));
+}
+
+void CdPlayer::transport_status_callback(TransportStatus stat)
+{
+	this->cur_track = stat.track_num;
+	this->track_min = stat.track_min;
+	this->track_sec = stat.track_sec;
+	this->deemph_active = stat.deemph_active;
+}
+
 bool CdPlayer::wait_and_load_disc()
 {
 	this->transport.wait_for_disc();

@@ -9,11 +9,7 @@
 class CdPlayer
 {
 	public:
-		CdPlayer() :
-			data_buf(SAMPLES_PER_CD_FRAME * 75 * 3),
-			transport(&this->data_buf), 
-			audio_out(&this->data_buf)
-		{ }
+		CdPlayer();
 		bool wait_and_load_disc();
 		bool play_disc();
 		void seek_prev();
@@ -21,12 +17,21 @@ class CdPlayer
 		void seek_track(int track_num);
 		void pause();
 		void set_deemph_mode(DeemphMode mode);
-	private:
+
+		// readonly
 		bool have_disc;
 		bool paused;
+		int cur_track;
+		int track_min;
+		int track_sec;
+		bool deemph_active;
+
+	private:
 		CircularBlockingQueue<int16_t> data_buf;
 		CdTransport transport;
 		AudioOut audio_out;
+
+		void transport_status_callback(TransportStatus stat);
 };
 
 #endif

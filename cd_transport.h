@@ -10,6 +10,18 @@
 #include <cdio/paranoia/cdda.h>
 #include <cdio/paranoia/paranoia.h>
 #include <cdio/cd_types.h>
+#include <functional>
+
+class TransportStatus
+{
+	public:
+		// Current playback position
+		int track_num;
+		int track_min;
+		int track_sec;
+
+		bool deemph_active;
+};
 
 class CdTransport
 {
@@ -26,6 +38,9 @@ class CdTransport
 		void pause();
 		void set_deemph_mode(DeemphMode mode);
 
+		// Set a callback that will be invoked on each sector read 
+		void set_status_callback(std::function<void(TransportStatus)>);
+
 
 	private:
 		CdIo_t *cdio;
@@ -34,6 +49,7 @@ class CdTransport
 		Deemph deemph;
 		DeemphMode deemph_mode;
 		CircularBlockingQueue<int16_t> *data_out;
+		std::function<void(TransportStatus)> status_callback;
 
 		// TOC info
 		lsn_t disc_first_lsn;
@@ -48,6 +64,7 @@ class CdTransport
 		std::atomic<lsn_t> read_cursor;
 
 		void seek_lsn(lsn_t lsn);
+		void get_track_min_sec(int tr, int *min, int *sec);
 };
 
 #endif

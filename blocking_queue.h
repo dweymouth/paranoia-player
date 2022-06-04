@@ -27,6 +27,9 @@ class CircularBlockingQueue {
 		// Returns the number of items read.
 		int non_blocking_read(int count, T *data);
 
+		// Returns the number of items currently in the queue.
+		int get_count();
+
 		// Sets whether or not reads from this queue are paused.
 		// When paused, calls to non_blocking_read will always return 0
 		// and copy no data. When buffer is full, calls to blocking_write will block.
@@ -51,6 +54,12 @@ void CircularBlockingQueue<T>::clear()
 	this->size = 0;
 	this->read_idx = 0;
 	this->write_idx = 0;
+}
+
+template <typename T>
+int CircularBlockingQueue<T>::get_count()
+{
+	return this->size;
 }
 
 template <typename T>
