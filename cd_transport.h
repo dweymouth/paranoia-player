@@ -11,6 +11,7 @@
 #include <cdio/paranoia/paranoia.h>
 #include <cdio/cd_types.h>
 #include <functional>
+#include <mutex>
 
 class TransportStatus
 {
@@ -36,6 +37,7 @@ class CdTransport
 		void seek_prev();
 		void seek_next();
 		void pause();
+		void eject();
 		void set_deemph_mode(DeemphMode mode);
 
 		// Set a callback that will be invoked on each sector read 
@@ -43,6 +45,8 @@ class CdTransport
 
 
 	private:
+		// make sure we don't eject during a read or seek
+		std::mutex drive_mut;
 		CdIo_t *cdio;
 		cdrom_drive_t *drive;
 		cdrom_paranoia_t *paranoia;
@@ -61,6 +65,7 @@ class CdTransport
 		bool track_has_preemph[100];
 
 		// Playback state
+		bool playing;
 		std::atomic<lsn_t> read_cursor;
 		int paranoia_read_retries;
 

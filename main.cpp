@@ -75,6 +75,8 @@ void read_cmds()
 			}
 		} else if (cmd == "status") {
 			print_status_msg();
+		} else if (cmd == "eject") {
+			player.eject();
 		}
 		line.clear();
 	}

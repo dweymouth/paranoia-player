@@ -16,6 +16,7 @@ class CdPlayer
 		void seek_next();
 		void seek_track(int track_num);
 		void pause();
+		void eject();
 		void set_deemph_mode(DeemphMode mode);
 
 		// readonly

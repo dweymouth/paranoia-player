@@ -69,8 +69,10 @@ bool CdTransport::load_disc()
 
 void CdTransport::play()
 {
+	int16_t *p_readbuf;
 	int16_t deemph_buf[SAMPLES_PER_CD_FRAME];
-	while (this->read_cursor < this->disc_last_lsn) {
+	this->playing = true;
+	while (this->playing && this->read_cursor < this->disc_last_lsn) {
 		int tr = cdio_cddap_sector_gettrack(drive, this->read_cursor);
 		if (this->deemph_mode == AUTO) {
 			this->deemph.enabled = this->track_has_preemph[tr];
@@ -82,8 +84,15 @@ void CdTransport::play()
 			status.deemph_active = this->deemph.enabled;
 			this->status_callback(status);
 		}
-		int16_t *p_readbuf = cdio_paranoia_read_limited(
+		{
+			// atomic section for device access
+			std::lock_guard<std::mutex> lk(this->drive_mut);
+			if (!this->playing) {
+				break;
+			}
+			p_readbuf = cdio_paranoia_read_limited(
 				paranoia, NULL, this->paranoia_read_retries);
+		}
 		if (!p_readbuf) {
 			std::cerr << "Paranoia read err. Stopping." << std::endl;
 			break;
@@ -95,6 +104,15 @@ void CdTransport::play()
 			this->data_out->blocking_write(p_readbuf, SAMPLES_PER_CD_FRAME);
 		}
 		this->read_cursor++;
+	}
+	this->playing = false;
+	// notify that we've stopped
+	if (this->status_callback) {
+		TransportStatus status;
+		status.track_num = 0;
+		status.track_min = 0;
+		status.track_sec = 0;
+		this->status_callback(status);
 	}
 }
 
@@ -138,6 +156,10 @@ void CdTransport::seek_next()
 
 void CdTransport::seek_lsn(lsn_t lsn)
 {
+	std::lock_guard<std::mutex> lk(this->drive_mut);
+	if (!this->paranoia) {
+		return;
+	}
 	this->data_out->clear();
 	this->read_cursor = lsn;
 	cdio_paranoia_seek(this->paranoia, this->read_cursor, SEEK_SET);
@@ -161,9 +183,23 @@ void CdTransport::get_track_min_sec(int cur_tr, int *min, int *sec)
 	*sec = *sec % 60;
 }
 
+void CdTransport::eject()
+{
+	std::lock_guard<std::mutex> lk(this->drive_mut);
+	this->playing = false;
+	paranoia_free(this->paranoia);
+	this->paranoia = NULL;
+	cdio_cddap_close_no_free_cdio(drive);
+	this->drive = NULL;
+	cdio_eject_media(&this->cdio);
+}
+
 CdTransport::~CdTransport()
 {
-	paranoia_free(this->paranoia);
-	cdio_cddap_close_no_free_cdio(drive);
-	cdio_destroy(cdio);
+	if (this->paranoia)
+		paranoia_free(this->paranoia);
+	if (this->drive)
+		cdio_cddap_close_no_free_cdio(drive);
+	if (this->cdio)
+		cdio_destroy(cdio);
 }

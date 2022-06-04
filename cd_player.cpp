@@ -51,6 +51,13 @@ void CdPlayer::seek_next()
 	this->transport.seek_next();
 }
 
+void CdPlayer::eject()
+{
+	this->audio_out.stop();
+	this->data_buf.clear();
+	this->transport.eject();
+}
+
 void CdPlayer::seek_track(int track_num)
 {
 	this->transport.seek_track(track_num);
