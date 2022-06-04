@@ -55,6 +55,16 @@ void read_cmds()
 			} else if (deemph_mode == "auto") {
 				player.set_deemph_mode(AUTO);
 			}
+		} else if (cmd == "seek-track") {
+			std::string track_num_str;
+			stream >> track_num_str;
+			int track_num = -1;
+			try {
+				track_num = stoi(track_num_str);
+			} catch (std::exception &e) { }
+			if (track_num > 0) {
+				player.seek_track(track_num);
+			}
 		}
 		line.clear();
 	}
