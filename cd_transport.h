@@ -62,9 +62,11 @@ class CdTransport
 
 		// Playback state
 		std::atomic<lsn_t> read_cursor;
+		int paranoia_read_retries;
 
 		void seek_lsn(lsn_t lsn);
 		void get_track_min_sec(int tr, int *min, int *sec);
+		void adjust_retries();
 };
 
 #endif

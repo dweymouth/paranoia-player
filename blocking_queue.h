@@ -30,6 +30,9 @@ class CircularBlockingQueue {
 		// Returns the number of items currently in the queue.
 		int get_count();
 
+		// Returns a value in [0.0, 1.0] representing how full the buffer is.
+		float get_fill_ratio();
+
 		// Sets whether or not reads from this queue are paused.
 		// When paused, calls to non_blocking_read will always return 0
 		// and copy no data. When buffer is full, calls to blocking_write will block.
@@ -60,6 +63,12 @@ template <typename T>
 int CircularBlockingQueue<T>::get_count()
 {
 	return this->size;
+}
+
+template <typename T>
+float CircularBlockingQueue<T>::get_fill_ratio()
+{
+	return ((float)this->size) / this->capacity;
 }
 
 template <typename T>

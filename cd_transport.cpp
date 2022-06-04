@@ -9,6 +9,7 @@
 CdTransport::CdTransport(CircularBlockingQueue<int16_t> *data_out)
 {
 	this->data_out = data_out;
+	this->paranoia_read_retries = 3;
 }
 
 void CdTransport::set_status_callback(std::function<void(TransportStatus)> callbk)
@@ -81,7 +82,8 @@ void CdTransport::play()
 			status.deemph_active = this->deemph.enabled;
 			this->status_callback(status);
 		}
-		int16_t *p_readbuf = cdio_paranoia_read_limited(paranoia, NULL, 3 /*retries*/);
+		int16_t *p_readbuf = cdio_paranoia_read_limited(
+				paranoia, NULL, this->paranoia_read_retries);
 		if (!p_readbuf) {
 			std::cerr << "Paranoia read err. Stopping." << std::endl;
 			break;
@@ -89,6 +91,20 @@ void CdTransport::play()
 		deemph.process_samples(deemph_buf, p_readbuf, SAMPLES_PER_CD_FRAME);
 		this->data_out->blocking_write(deemph_buf, SAMPLES_PER_CD_FRAME);
 		this->read_cursor++;
+	}
+}
+
+void CdTransport::adjust_retries()
+{
+	float fill = this->data_out->get_fill_ratio();
+	if (fill < 0.1) {
+		this->paranoia_read_retries = 0;
+	} else if (fill < 0.25) {
+		this->paranoia_read_retries = 1;
+	} else if (fill < 0.75) {
+		this->paranoia_read_retries = 2;
+	} else {
+		this->paranoia_read_retries = 3;
 	}
 }
 
