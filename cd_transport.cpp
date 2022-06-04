@@ -88,8 +88,12 @@ void CdTransport::play()
 			std::cerr << "Paranoia read err. Stopping." << std::endl;
 			break;
 		}
-		deemph.process_samples(deemph_buf, p_readbuf, SAMPLES_PER_CD_FRAME);
-		this->data_out->blocking_write(deemph_buf, SAMPLES_PER_CD_FRAME);
+		if (this->deemph.enabled) {
+			deemph.process_samples(deemph_buf, p_readbuf, SAMPLES_PER_CD_FRAME);
+			this->data_out->blocking_write(deemph_buf, SAMPLES_PER_CD_FRAME);
+		} else {
+			this->data_out->blocking_write(p_readbuf, SAMPLES_PER_CD_FRAME);
+		}
 		this->read_cursor++;
 	}
 }
