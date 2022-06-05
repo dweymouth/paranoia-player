@@ -21,27 +21,28 @@
 #include "cd_transport.h"
 #include "deemph.h"
 
+using namespace std;
 
 CdPlayer player;
 
 void print_time(int min, int sec)
 {
-	std::cout << min << ":" << (sec < 10 ? "0" : "") << sec;
+	cout << min << ":" << (sec < 10 ? "0" : "") << sec;
 }
 
 void print_status_msg()
 {
 	if (player.state == STOPPED) {
-		std::cout << "stopped" << std::endl;
+		cout << "stopped" << endl;
 		return;
 	}
-	std::cout << (player.state == PAUSED ? "paused " : "playing ");
-	std::cout << "track " << player.cur_track << " ";
+	cout << (player.state == PAUSED ? "paused " : "playing ");
+	cout << "track " << player.cur_track << " ";
 	print_time(player.track_min, player.track_sec);
 	if (player.deemph_active) {
-		std::cout << " deemph";
+		cout << " deemph";
 	}
-	std::cout << std::endl;
+	cout << endl;
 }
 
 void get_min_sec(int sec, int *pmin, int *psec)
@@ -53,44 +54,56 @@ void get_min_sec(int sec, int *pmin, int *psec)
 void wait_for_disc_then_print_info()
 {
 	if (!player.have_disc) {
-		std::cout << "Waiting for disc..." << std::endl;
+		cout << "Waiting for disc..." << endl;
 		if (!player.wait_and_load_disc()) {
-			std::cerr << "Unable to load disc." << std::endl;
+			cerr << "Unable to load disc." << endl;
 			exit(77);
 		}
 		// print disc info
 		DiscInfo *info = player.get_disc_info();
-		std::cout << "Disc has " << info->num_tracks << "tracks. Total time ";
+		cout << "Disc has " << info->num_tracks << "tracks. Total time ";
 		int min, sec;
 		get_min_sec(info->disc_duration_secs(), &min, &sec);
 		print_time(min, sec);
-		std::cout << std::endl;
+		cout << endl;
 		for (int i = 1; i <= info->num_tracks; i++) {
-			std::cout << "Track " << i << " (";
+			cout << "Track " << i << " (";
 			get_min_sec(info->track_duration_secs(i), &min, &sec);
 			print_time(min, sec);
-			std::cout << ")" << std::endl;
+			cout << ")" << endl;
 		}
+		cout << "Type 'play' to start playback, or 'help' to list available commands." << endl;
 	}
+}
+
+void print_help()
+{
+	cout << "Available commands: " << endl;
+	cout << "play" << endl << "pause" << endl << "exit" << endl << "status" << endl;
+	cout << "seek-next" << endl << "seek-prev" << endl;
+	cout << "seek-track <track-num>" << endl;
+	cout << "deemph [on|off|auto]" << endl;
 }
 
 
 void do_main_loop()
 {
-	std::string line;
+	string line;
 	while (true) {
 		wait_for_disc_then_print_info();
-		std::cout << "> ";
+		cout << "> ";
 		// while we have a CD, enter cmd loop
-		std::getline(std::cin, line);
-		std::stringstream stream(line);
-		std::string cmd;
+		getline(cin, line);
+		stringstream stream(line);
+		string cmd;
 		stream >> cmd;
 		if (cmd == "play") {
 			player.play_disc();
-		} else if (cmd == "stop") {
+		} else if (cmd == "help") {
+			print_help();
+		}else if (cmd == "stop") {
 			// stop isn't working right now
-			std::cout << "Stop is currently unsupported. Use pause or exit instead." << std::endl;
+			cout << "Stop is currently unsupported. Use pause or exit instead." << endl;
 			//player.stop();
 		} else if (cmd == "seek-next") {
 			player.seek_next();
@@ -99,9 +112,9 @@ void do_main_loop()
 		} else if (cmd == "pause") {
 			player.pause();
 		} else if (cmd == "exit") {
-			std::exit(0);	
+			exit(0);	
 		} else if (cmd == "deemph") {
-			std::string deemph_mode;
+			string deemph_mode;
 			stream >> deemph_mode;
 			if (deemph_mode == "on") {
 				player.set_deemph_mode(ON);
@@ -111,12 +124,12 @@ void do_main_loop()
 				player.set_deemph_mode(AUTO);
 			}
 		} else if (cmd == "seek-track") {
-			std::string track_num_str;
+			string track_num_str;
 			stream >> track_num_str;
 			int track_num = -1;
 			try {
 				track_num = stoi(track_num_str);
-			} catch (std::exception &e) { }
+			} catch (exception &e) { }
 			if (track_num > 0) {
 				player.seek_track(track_num);
 			}

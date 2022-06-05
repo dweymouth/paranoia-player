@@ -59,7 +59,7 @@ bool CdTransport::load_disc()
 		this->disc_info.track_has_preemph[t] =
 			(cdio_get_track_preemphasis(cdio, t) == CDIO_TRACK_FLAG_TRUE);
 	}
-	this->read_cursor = this->disc_info.disc_first_lsn;
+	this->read_cursor = this->disc_info.track_first_lsns[1];
 
 	this->paranoia = paranoia_init(drive);
 	paranoia_modeset(this->paranoia, PARANOIA_MODE_SCRATCH&PARANOIA_MODE_REPAIR);
@@ -71,9 +71,11 @@ void CdTransport::play()
 {
 	if (this->playing)
 		return;
+	if (!this->paranoia)
+		return;
+	this->seek_lsn(this->read_cursor);
 	int16_t *p_readbuf;
 	int16_t deemph_buf[SAMPLES_PER_CD_FRAME];
-	this->read_cursor = this->disc_info.track_first_lsns[1];
 	this->playing = true;
 	while (this->playing && this->read_cursor < this->disc_info.disc_last_lsn) {
 		int tr = cdio_cddap_sector_gettrack(drive, this->read_cursor);
@@ -104,6 +106,8 @@ void CdTransport::play()
 		this->read_cursor++;
 	}
 	std::cout << "Exiting playback loop" << std::endl;
+	// reset cursor to beginning
+	this->read_cursor = this->disc_info.track_first_lsns[1];
 	this->playing = false;
 	// notify that we've stopped
 	do_status_callback(-1);
@@ -145,7 +149,7 @@ void CdTransport::adjust_retries()
 
 void CdTransport::seek_track(int track_num)
 {
-	if (track_num > this->disc_info.num_tracks) {
+	if (track_num < 1 || track_num > this->disc_info.num_tracks) {
 		return;
 	}
 	this->seek_lsn(this->disc_info.track_first_lsns[track_num]);
@@ -156,6 +160,8 @@ void CdTransport::seek_prev()
 	int cur_track = cdio_cddap_sector_gettrack(drive, this->read_cursor);
 	if (cur_track > 1) {
 		this->seek_lsn(this->disc_info.track_first_lsns[cur_track - 1]);
+	} else if (cur_track == 1) {
+		this->seek_lsn(this->disc_info.track_first_lsns[1]);
 	}
 }
 
