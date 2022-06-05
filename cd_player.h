@@ -9,6 +9,7 @@
 enum PlayerState
 {
 	STOPPED,
+	STOPPING,
 	PLAYING,
 	PAUSED
 };

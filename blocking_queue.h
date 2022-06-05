@@ -53,10 +53,14 @@ CircularBlockingQueue<T>::CircularBlockingQueue(int capacity)
 template <typename T>
 void CircularBlockingQueue<T>::clear()
 {
-	std::lock_guard<std::mutex> lk(this->mut);
-	this->size = 0;
-	this->read_idx = 0;
-	this->write_idx = 0;
+	{
+		// atomic section
+		std::lock_guard<std::mutex> lk(this->mut);
+		this->size = 0;
+		this->read_idx = 0;
+		this->write_idx = 0;
+	}
+	this->has_cap_cv.notify_all();
 }
 
 template <typename T>
@@ -100,7 +104,7 @@ int CircularBlockingQueue<T>::non_blocking_read(int count, T *data)
 		}
 		this->size -= read_count;
 	}
-	this->has_cap_cv.notify_one();
+	this->has_cap_cv.notify_all();
 	return read_count;
 }
 

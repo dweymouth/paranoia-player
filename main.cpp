@@ -102,9 +102,9 @@ void do_main_loop()
 		} else if (cmd == "help") {
 			print_help();
 		}else if (cmd == "stop") {
-			// stop isn't working right now
-			cout << "Stop is currently unsupported. Use pause or exit instead." << endl;
 			//player.stop();
+			// Stop isn't working right now
+			cout << "Stop is currently unsupported. Use pause or exit instead." << endl;
 		} else if (cmd == "seek-next") {
 			player.seek_next();
 		} else if (cmd == "seek-prev") {

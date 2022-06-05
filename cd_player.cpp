@@ -13,7 +13,6 @@ CdPlayer::CdPlayer() :
 void CdPlayer::transport_status_callback(TransportStatus stat)
 {
 	if (stat.stopped) {
-		std::cout << "got stop message from transport" << std::endl;
 		this->state = STOPPED;
 	}
 	this->cur_track = stat.track_num;
@@ -36,6 +35,9 @@ bool CdPlayer::play_disc()
 {
 	if (this->state == PLAYING) {
 		return true;
+	}
+	if (this->state == STOPPING) {
+		return false;
 	}
 	if (this->state == PAUSED) {
 		this->pause();
@@ -69,8 +71,10 @@ void CdPlayer::seek_next()
 
 void CdPlayer::stop()
 {
+	this->data_buf.clear();
 	this->audio_out.stop();
 	this->transport.stop();
+	this->state = STOPPING;
 	// don't set state == STOPPED until we get a callback from transport
 }
 
