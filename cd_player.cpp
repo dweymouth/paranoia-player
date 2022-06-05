@@ -1,5 +1,6 @@
 #include "cd_player.h"
 #include <iostream>
+#include <thread>
 
 CdPlayer::CdPlayer() :
 	data_buf(SAMPLES_PER_CD_FRAME * 75 * 5),
@@ -11,6 +12,10 @@ CdPlayer::CdPlayer() :
 
 void CdPlayer::transport_status_callback(TransportStatus stat)
 {
+	if (stat.stopped) {
+		std::cout << "got stop message from transport" << std::endl;
+		this->state = STOPPED;
+	}
 	this->cur_track = stat.track_num;
 	this->track_min = stat.track_min;
 	this->track_sec = stat.track_sec;
@@ -29,15 +34,26 @@ bool CdPlayer::wait_and_load_disc()
 
 bool CdPlayer::play_disc()
 {
+	if (this->state == PLAYING) {
+		return true;
+	}
+	if (this->state == PAUSED) {
+		this->pause();
+	}
 	if (!this->have_disc) {
 		return false;
 	}
-
-	if (!this->audio_out.init()) {
-		std::cerr << "Unable to initialize audio output." << std::endl;
+	if (!this->is_audio_init) {
+		if (!this->audio_out.init()) {
+			std::cerr << "Unable to initialize audio output." << std::endl;
+		} else {
+			this->is_audio_init = true;
+		}
 	}
 	this->audio_out.start();
-	this->transport.play();
+	std::thread play_thread(&CdTransport::play, &this->transport);
+	play_thread.detach();
+	this->state = PLAYING;
 	return true;
 }
 
@@ -51,11 +67,19 @@ void CdPlayer::seek_next()
 	this->transport.seek_next();
 }
 
+void CdPlayer::stop()
+{
+	this->audio_out.stop();
+	this->transport.stop();
+	// don't set state == STOPPED until we get a callback from transport
+}
+
 void CdPlayer::eject()
 {
 	this->audio_out.stop();
 	this->data_buf.clear();
 	this->transport.eject();
+	this->have_disc = false;
 }
 
 void CdPlayer::seek_track(int track_num)
@@ -66,8 +90,15 @@ void CdPlayer::seek_track(int track_num)
 void CdPlayer::pause()
 {
 	// when pausing, cd transport will stop reading when buffer fills
-	this->paused = !this->paused;
-	this->data_buf.set_read_paused(this->paused);
+	if (this->state == STOPPED) {
+		return;
+	}
+	if (this->state == PAUSED) {
+		this->state = PLAYING;
+	} else {
+		this->state = PAUSED;
+	}
+	this->data_buf.set_read_paused(this->state == PAUSED);
 }
 
 void CdPlayer::set_deemph_mode(DeemphMode mode)

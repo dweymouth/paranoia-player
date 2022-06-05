@@ -59,4 +59,4 @@ void Deemph::process_samples(int16_t *outbuf, int16_t *inbuf, int count)
 		yn1L = outbuf[count - 2];
 		yn1R = outbuf[count - 1];
 	}
-}	
+}

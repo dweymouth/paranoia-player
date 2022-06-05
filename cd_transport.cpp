@@ -50,16 +50,16 @@ bool CdTransport::load_disc()
 		std::cerr << "Unable to open disc." << std::endl;
 		return false;
 	}
-	this->disc_first_lsn = cdda_disc_firstsector(this->drive);
-	this->disc_last_lsn = cdda_disc_lastsector(this->drive);
-	this->num_tracks = cdio_cddap_tracks(this->drive);
-	for (int t = 0; t <= num_tracks; t++) {
-		this->track_first_lsns[t] = cdio_cddap_track_firstsector(drive, t);
-		this->track_last_lsns[t] = cdio_cddap_track_lastsector(drive, t);
-		this->track_has_preemph[t] =
+	this->disc_info.disc_first_lsn = cdda_disc_firstsector(this->drive);
+	this->disc_info.disc_last_lsn = cdda_disc_lastsector(this->drive);
+	this->disc_info.num_tracks = cdio_cddap_tracks(this->drive);
+	for (int t = 0; t <= this->disc_info.num_tracks; t++) {
+		this->disc_info.track_first_lsns[t] = cdio_cddap_track_firstsector(drive, t);
+		this->disc_info.track_last_lsns[t] = cdio_cddap_track_lastsector(drive, t);
+		this->disc_info.track_has_preemph[t] =
 			(cdio_get_track_preemphasis(cdio, t) == CDIO_TRACK_FLAG_TRUE);
 	}
-	this->read_cursor = this->disc_first_lsn;
+	this->read_cursor = this->disc_info.disc_first_lsn;
 
 	this->paranoia = paranoia_init(drive);
 	paranoia_modeset(this->paranoia, PARANOIA_MODE_SCRATCH&PARANOIA_MODE_REPAIR);
@@ -69,21 +69,19 @@ bool CdTransport::load_disc()
 
 void CdTransport::play()
 {
+	if (this->playing)
+		return;
 	int16_t *p_readbuf;
 	int16_t deemph_buf[SAMPLES_PER_CD_FRAME];
+	this->read_cursor = this->disc_info.track_first_lsns[1];
 	this->playing = true;
-	while (this->playing && this->read_cursor < this->disc_last_lsn) {
+	while (this->playing && this->read_cursor < this->disc_info.disc_last_lsn) {
 		int tr = cdio_cddap_sector_gettrack(drive, this->read_cursor);
 		if (this->deemph_mode == AUTO) {
-			this->deemph.enabled = this->track_has_preemph[tr];
+			this->deemph.enabled = this->disc_info.track_has_preemph[tr];
 		}
-		if (this->status_callback) {
-			TransportStatus status;
-			status.track_num = tr;
-			this->get_track_min_sec(tr, &status.track_min, &status.track_sec);
-			status.deemph_active = this->deemph.enabled;
-			this->status_callback(status);
-		}
+		this->do_status_callback(tr);
+		this->adjust_retries();
 		{
 			// atomic section for device access
 			std::lock_guard<std::mutex> lk(this->drive_mut);
@@ -105,16 +103,31 @@ void CdTransport::play()
 		}
 		this->read_cursor++;
 	}
+	std::cout << "Exiting playback loop" << std::endl;
 	this->playing = false;
 	// notify that we've stopped
+	do_status_callback(-1);
+}
+
+void CdTransport::do_status_callback(int cur_track)
+{
 	if (this->status_callback) {
 		TransportStatus status;
-		status.track_num = 0;
-		status.track_min = 0;
-		status.track_sec = 0;
+		if (cur_track == -1) {
+			status.stopped = true;
+		} else {
+			status.track_num = cur_track;
+			if (!this->playing) {
+				status.track_min = status.track_sec = 0;
+			} else {
+				this->get_track_min_sec(cur_track, &status.track_min, &status.track_sec);
+			}
+			status.deemph_active = this->deemph.enabled;
+		}
 		this->status_callback(status);
 	}
 }
+
 
 void CdTransport::adjust_retries()
 {
@@ -132,25 +145,30 @@ void CdTransport::adjust_retries()
 
 void CdTransport::seek_track(int track_num)
 {
-	if (track_num > this->num_tracks) {
+	if (track_num > this->disc_info.num_tracks) {
 		return;
 	}
-	this->seek_lsn(this->track_first_lsns[track_num]);
+	this->seek_lsn(this->disc_info.track_first_lsns[track_num]);
 }
 
 void CdTransport::seek_prev()
 {
 	int cur_track = cdio_cddap_sector_gettrack(drive, this->read_cursor);
 	if (cur_track > 1) {
-		this->seek_lsn(this->track_first_lsns[cur_track - 1]);
+		this->seek_lsn(this->disc_info.track_first_lsns[cur_track - 1]);
 	}
+}
+
+void CdTransport::stop()
+{
+	this->playing = false;
 }
 
 void CdTransport::seek_next()
 {
 	int cur_track = cdio_cddap_sector_gettrack(drive, this->read_cursor);
-	if (cur_track < this->num_tracks) {
-		this->seek_lsn(this->track_first_lsns[cur_track + 1]);
+	if (cur_track < this->disc_info.num_tracks) {
+		this->seek_lsn(this->disc_info.track_first_lsns[cur_track + 1]);
 	}
 }
 
@@ -177,7 +195,7 @@ void CdTransport::set_deemph_mode(DeemphMode mode)
 
 void CdTransport::get_track_min_sec(int cur_tr, int *min, int *sec)
 {
-	lsn_t lsn_offs = this->read_cursor - this->track_first_lsns[cur_tr];
+	lsn_t lsn_offs = this->read_cursor - this->disc_info.track_first_lsns[cur_tr];
 	*sec = (lsn_offs * SAMPLES_PER_CD_FRAME - this->data_out->get_count()) / 88200;
 	*min = *sec / 60;
 	*sec = *sec % 60;

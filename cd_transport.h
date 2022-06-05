@@ -4,6 +4,7 @@
 #include "blocking_queue.h"
 #include "common.h"
 #include "deemph.h"
+#include "disc_info.h"
 
 #include <atomic>
 #include <condition_variable>
@@ -22,6 +23,7 @@ class TransportStatus
 		int track_sec;
 
 		bool deemph_active;
+		bool stopped;
 };
 
 class CdTransport
@@ -37,12 +39,15 @@ class CdTransport
 		void seek_prev();
 		void seek_next();
 		void pause();
+		void stop();
 		void eject();
 		void set_deemph_mode(DeemphMode mode);
 
 		// Set a callback that will be invoked on each sector read 
 		void set_status_callback(std::function<void(TransportStatus)>);
 
+		// read-only access outside of this class
+		DiscInfo disc_info;
 
 	private:
 		// make sure we don't eject during a read or seek
@@ -55,23 +60,16 @@ class CdTransport
 		CircularBlockingQueue<int16_t> *data_out;
 		std::function<void(TransportStatus)> status_callback;
 
-		// TOC info
-		lsn_t disc_first_lsn;
-		lsn_t disc_last_lsn;
-		int num_tracks;
-		// CDs only have up to 99 tracks (+ track 0?) so just reserve 100
-		lsn_t track_first_lsns[100];
-		lsn_t track_last_lsns[100];
-		bool track_has_preemph[100];
-
 		// Playback state
-		bool playing;
+		std::atomic<bool> playing;
 		std::atomic<lsn_t> read_cursor;
 		int paranoia_read_retries;
 
+		// Private methods
 		void seek_lsn(lsn_t lsn);
 		void get_track_min_sec(int tr, int *min, int *sec);
 		void adjust_retries();
+		void do_status_callback(int cur_track);
 };
 
 #endif
