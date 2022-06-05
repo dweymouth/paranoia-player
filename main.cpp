@@ -32,6 +32,7 @@ void print_time(int min, int sec)
 
 void print_status_msg()
 {
+	cout << "Player state is " << player.state << endl;
 	if (player.state == STOPPED) {
 		cout << "stopped" << endl;
 		return;
@@ -102,9 +103,7 @@ void do_main_loop()
 		} else if (cmd == "help") {
 			print_help();
 		}else if (cmd == "stop") {
-			//player.stop();
-			// Stop isn't working right now
-			cout << "Stop is currently unsupported. Use pause or exit instead." << endl;
+			player.stop();
 		} else if (cmd == "seek-next") {
 			player.seek_next();
 		} else if (cmd == "seek-prev") {

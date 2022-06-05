@@ -6,6 +6,8 @@
 #include "cd_transport.h"
 #include "common.h"
 
+#include <atomic>
+
 enum PlayerState
 {
 	STOPPED,
@@ -32,7 +34,7 @@ class CdPlayer
 
 		// readonly
 		bool have_disc;
-		PlayerState state;
+		std::atomic<PlayerState> state;
 		int cur_track;
 		int track_min;
 		int track_sec;
