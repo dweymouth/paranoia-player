@@ -121,6 +121,7 @@ void CdTransport::do_status_callback(int cur_track)
 			status.stopped = true;
 		} else {
 			status.track_num = cur_track;
+			status.lsn_cursor = this->read_cursor;
 			if (!this->playing) {
 				status.track_min = status.track_sec = 0;
 			} else {

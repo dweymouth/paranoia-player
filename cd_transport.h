@@ -19,6 +19,7 @@ class TransportStatus
 	public:
 		// Current playback position
 		int track_num;
+		lsn_t lsn_cursor;
 		int track_min;
 		int track_sec;
 
