@@ -20,8 +20,6 @@ class TransportStatus
 		// Current playback position
 		int track_num;
 		lsn_t lsn_cursor;
-		int track_min;
-		int track_sec;
 
 		bool deemph_active;
 		bool stopped;
@@ -68,7 +66,6 @@ class CdTransport
 
 		// Private methods
 		void seek_lsn(lsn_t lsn);
-		void get_track_min_sec(int tr, int *min, int *sec);
 		void adjust_retries();
 		void do_status_callback(int cur_track);
 };

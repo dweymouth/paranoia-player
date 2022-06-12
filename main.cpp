@@ -39,7 +39,9 @@ void print_status_msg()
 	}
 	cout << (player.state == PAUSED ? "paused " : "playing ");
 	cout << "track " << player.cur_track << " ";
-	print_time(player.track_min, player.track_sec);
+	int min = (int)(player.track_time_sec / 60);
+	int sec = ((int)player.track_time_sec) % 60;
+	print_time(min, sec);
 	if (player.deemph_active) {
 		cout << " deemph";
 	}

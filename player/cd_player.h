@@ -50,8 +50,7 @@ class CdPlayer
 		std::atomic<bool> have_disc;
 		std::atomic<PlayerState> state;
 		int cur_track;
-		int track_min;
-		int track_sec;
+		float track_time_sec;
 		bool deemph_active;
 
 	private:
@@ -65,6 +64,7 @@ class CdPlayer
 		std::function<void(PlayerStatus)> status_callback;
 
 		void transport_status_callback(TransportStatus stat);
+		void calculate_track_time(lsn_t transport_cursor, int transport_tr);
 };
 
 #endif

@@ -22,11 +22,23 @@ void CdPlayer::transport_status_callback(TransportStatus stat)
 		// TODO: spin up thread to check data buf
 		// and update state to stopped once buffer runs out
 	} else {
-		this->cur_track = stat.track_num;
-		this->track_min = stat.track_min;
-		this->track_sec = stat.track_sec;
+		this->transport_cursor = stat.lsn_cursor;
+		calculate_track_time(stat.lsn_cursor, stat.track_num);
 		this->deemph_active = stat.deemph_active;
 	}
+}
+
+void CdPlayer::calculate_track_time(lsn_t transport_cursor, int transport_tr)
+{
+	// figure out the lsn pointing to the data being sent to the sound card now
+	lsn_t playing_lsn = transport_cursor - (this->data_buf.get_count() / SAMPLES_PER_CD_FRAME);
+	this->cur_track = transport_tr;
+	DiscInfo info = this->transport.disc_info;
+	if (playing_lsn < info.track_first_lsns[transport_tr]) {
+		// transport is reading track n but we're still playing track n-1
+		this->cur_track = transport_tr - 1;
+	}
+	this->track_time_sec = (playing_lsn - info.track_first_lsns[this->cur_track]) / 75.0;
 }
 
 bool CdPlayer::wait_and_load_disc()

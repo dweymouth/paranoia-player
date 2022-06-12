@@ -125,11 +125,6 @@ void CdTransport::do_status_callback(int cur_track)
 		} else {
 			status.track_num = cur_track;
 			status.lsn_cursor = this->read_cursor;
-			if (!this->playing) {
-				status.track_min = status.track_sec = 0;
-			} else {
-				this->get_track_min_sec(cur_track, &status.track_min, &status.track_sec);
-			}
 			status.deemph_active = this->deemph.enabled;
 		}
 		this->status_callback(status);
@@ -201,14 +196,6 @@ void CdTransport::set_deemph_mode(DeemphMode mode)
 	} else if (mode == OFF) {
 		this->deemph.enabled = false;
 	}
-}
-
-void CdTransport::get_track_min_sec(int cur_tr, int *min, int *sec)
-{
-	lsn_t lsn_offs = this->read_cursor - this->disc_info.track_first_lsns[cur_tr];
-	*sec = (lsn_offs * SAMPLES_PER_CD_FRAME - this->data_out->get_count()) / 88200;
-	*min = *sec / 60;
-	*sec = *sec % 60;
 }
 
 void CdTransport::eject()
