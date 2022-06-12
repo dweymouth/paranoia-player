@@ -75,6 +75,7 @@ void CdTransport::play()
 		return;
 	this->seek_lsn(this->read_cursor);
 	int16_t *p_readbuf;
+	int16_t cdio_readbuf[SAMPLES_PER_CD_FRAME];
 	int16_t deemph_buf[SAMPLES_PER_CD_FRAME];
 	this->playing = true;
 	while (this->playing && this->read_cursor < this->disc_info.disc_last_lsn) {
@@ -90,8 +91,10 @@ void CdTransport::play()
 			if (!this->playing) {
 				break;
 			}
-			p_readbuf = cdio_paranoia_read_limited(
-				paranoia, NULL, this->paranoia_read_retries);
+			cdio_read_audio_sector(this->cdio, &cdio_readbuf, this->read_cursor);
+			p_readbuf = cdio_readbuf;
+			//p_readbuf = cdio_paranoia_read_limited(
+			//	paranoia, NULL, this->paranoia_read_retries);
 		}
 		if (!p_readbuf) {
 			std::cerr << "Paranoia read err. Stopping." << std::endl;
