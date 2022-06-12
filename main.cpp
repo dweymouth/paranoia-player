@@ -15,11 +15,11 @@
 #include <sstream>
 #include <thread>
 
-#include "audio_out.h"
-#include "blocking_queue.h"
-#include "cd_player.h"
-#include "cd_transport.h"
-#include "deemph.h"
+#include "player/audio_out.h"
+#include "player/blocking_queue.h"
+#include "player/cd_player.h"
+#include "player/cd_transport.h"
+#include "player/deemph.h"
 
 using namespace std;
 
