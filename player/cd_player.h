@@ -33,13 +33,14 @@ struct PlayerStatus
 class CdPlayer
 {
 	public:
-		CdPlayer();
+		CdPlayer(bool auto_await_disc = false);
 		bool wait_and_load_disc();
 		bool play_disc();
 		void seek_prev();
 		void seek_next();
 		void seek_track(int track_num);
 		void pause();
+		void play_pause();
 		void stop();
 		void eject();
 		void set_deemph_mode(DeemphMode mode);
@@ -49,8 +50,8 @@ class CdPlayer
 		// readonly
 		std::atomic<bool> have_disc;
 		std::atomic<PlayerState> state;
-		int cur_track;
-		float track_time_sec;
+		std::atomic<int> cur_track;
+		std::atomic<float> track_time_sec;
 		bool deemph_active;
 
 	private:
@@ -58,6 +59,7 @@ class CdPlayer
 		CdTransport transport;
 		lsn_t transport_cursor;
 		AudioOut audio_out;
+		bool auto_await_disc;
 		bool is_audio_init;
 		bool is_audio_active;
 		std::atomic<bool> transport_running;

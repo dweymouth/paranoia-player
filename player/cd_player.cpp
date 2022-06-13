@@ -3,13 +3,18 @@
 #include <iostream>
 #include <thread>
 
-CdPlayer::CdPlayer() :
+CdPlayer::CdPlayer(bool auto_await_disc) :
 	data_buf(SAMPLES_PER_CD_FRAME * 75 * 5),
 	transport(&this->data_buf),
 	audio_out(&this->data_buf)
 {
 	this->state = STOPPED;
+	this->auto_await_disc = auto_await_disc;
 	this->transport.set_status_callback(std::bind(&CdPlayer::transport_status_callback, this, std::placeholders::_1));
+	if (auto_await_disc) {
+		std::thread await_disc_th(std::bind(&CdPlayer::wait_and_load_disc, this));
+		await_disc_th.detach();
+	}
 }
 
 void CdPlayer::transport_status_callback(TransportStatus stat)
@@ -141,6 +146,10 @@ void CdPlayer::eject()
 	}
 	this->transport.eject();
 	this->have_disc = false;
+	if (this->auto_await_disc) {
+		std::thread await_disc_th(std::bind(&CdPlayer::wait_and_load_disc, this));
+		await_disc_th.detach();
+	}
 }
 
 void CdPlayer::seek_track(int track_num)
@@ -162,6 +171,16 @@ void CdPlayer::pause()
 		this->state = PAUSED;
 	}
 	this->data_buf.set_read_paused(this->state == PAUSED);
+}
+
+void CdPlayer::play_pause()
+{
+	if (!this->have_disc || this->state == STOPPING)
+		return;
+	if (this->state == STOPPED)
+		this->play_disc();
+	else
+		this->pause();
 }
 
 void CdPlayer::set_deemph_mode(DeemphMode mode)
