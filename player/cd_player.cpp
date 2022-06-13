@@ -159,6 +159,21 @@ void CdPlayer::seek_track(int track_num)
 	this->transport.seek_track(track_num);
 }
 
+void CdPlayer::seek_trackpos(float pos)
+{
+	if (!this->have_disc)
+		return;
+	if (pos < 0.)
+		pos = 0.;
+	if (pos > 1.)
+		pos = 1.;
+
+	DiscInfo *info = get_disc_info();
+	lsn_t first = info->track_first_lsns[cur_track];
+	lsn_t seek = first + ((lsn_t)((info->track_last_lsns[cur_track] - first) * pos));
+	this->transport.seek_lsn(seek);
+}
+
 void CdPlayer::pause()
 {
 	// when pausing, cd transport will stop reading when buffer fills

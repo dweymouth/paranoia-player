@@ -39,6 +39,8 @@ class CdPlayer
 		void seek_prev();
 		void seek_next();
 		void seek_track(int track_num);
+		// seek to a position within the current track (pos in [0..1])
+		void seek_trackpos(float pos);
 		void pause();
 		void play_pause();
 		void stop();

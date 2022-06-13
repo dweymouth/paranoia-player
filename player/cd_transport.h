@@ -37,6 +37,7 @@ class CdTransport
 		void seek_track(int track_num);
 		void seek_prev();
 		void seek_next();
+		void seek_lsn(lsn_t lsn);
 		void pause();
 		void stop();
 		void eject();
@@ -65,7 +66,6 @@ class CdTransport
 		int paranoia_read_retries;
 
 		// Private methods
-		void seek_lsn(lsn_t lsn);
 		void adjust_retries();
 		void do_status_callback(int cur_track);
 };

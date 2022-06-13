@@ -15,28 +15,11 @@
 CdPlayerUI *playerUi;
 CdPlayer player(true);
 
-// test
-void update_digits()
-{
-	for (int i = 0; i < 99; i++)
-	{
-		Fl::lock();
-		playerUi->disp->track_disp.set_digits(i / 10, i % 10);
-		playerUi->disp->time_disp.set_time(i, i);
-		playerUi->track_pos->value((float)i/100);
-		Fl::unlock();
-		Fl::awake();
-		sleep(1);
-	}
-}
-
 int main(int argc, char **argv) {
 	Fl::lock();
 
 	playerUi = new CdPlayerUI(&player);
 	playerUi->show(argc, argv);
 	Fl::unlock();
-	//std::thread update_digits_thr(update_digits);
-	//update_digits_thr.detach();
 	return Fl::run();
 }

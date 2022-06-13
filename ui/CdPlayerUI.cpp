@@ -52,6 +52,13 @@ void next_callback(Fl_Widget *w, void *data) {
 	ui->player->seek_next();
 }
 
+void track_pos_callback(Fl_Widget *w, void *data) {
+	CdPlayerUI *ui = (CdPlayerUI*)data;
+	if (!ui->player)
+		return;
+	ui->player->seek_trackpos(((Fl_Slider*)w)->value());
+}
+
 CdPlayerUI::CdPlayerUI(CdPlayer *player) :
 	Fl_Window(325, 185)
 {
@@ -71,6 +78,8 @@ CdPlayerUI::CdPlayerUI(CdPlayer *player) :
 	track_pos->type(FL_HOR_NICE_SLIDER);
 	track_pos->color(FL_DARK2, FL_DARK2);
 	track_pos->range(0., 1.);
+	track_pos->when(FL_WHEN_RELEASE);
+	track_pos->callback(track_pos_callback, this);
 
     stop = new Fl_Button(btn_pad, btn_row_y, 50, 50, "@+2square");
 	stop->color(FL_DARK2);
@@ -95,8 +104,10 @@ CdPlayerUI::CdPlayerUI(CdPlayer *player) :
 	next->callback(next_callback, this);
 	this->end();
 
-	std::thread update_thr(std::bind(&CdPlayerUI::display_update_routine, this));
-	update_thr.detach();
+	if (player) {
+		std::thread update_thr(std::bind(&CdPlayerUI::display_update_routine, this));
+		update_thr.detach();
+	}
 }
 
 void CdPlayerUI::display_update_routine()
@@ -116,6 +127,7 @@ void CdPlayerUI::display_update_routine()
 					track_pos->deactivate();
 				disp->set_track_num(info->num_tracks);
 				disp->set_time((int)info->disc_duration_secs() / 60, (int)info->disc_duration_secs() % 60);
+				disp->set_deemphasis(false);
 				break;
 			case PLAYING:
 			case PAUSED:
@@ -124,10 +136,11 @@ void CdPlayerUI::display_update_routine()
 				disp->set_track_num(player->cur_track);
 				disp->set_time((int)player->track_time_sec / 60, (int)player->track_time_sec % 60);
 				track_pos->value(player->track_time_sec / info->track_duration_secs(player->cur_track));
+				disp->set_deemphasis(player->deemph_active);
 			}
 		}
 		Fl::unlock();
 		Fl::awake();
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
 	}
 }

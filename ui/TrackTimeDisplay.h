@@ -14,8 +14,11 @@ class TrackTimeDisplay : public Fl_Widget
 			track_disp(x+15, y+10, 3*16, 3*13),
 			time_disp(x+90, y+10, 3*37, 3*13),
 			track_lbl(x+15, y+40, 50, 50, "Track"),
-			time_lbl(x+150, y+40, 40, 50, "Time")
-		{ }
+			time_lbl(x+150, y+40, 40, 50, "Time"),
+			deemph_lbl(x+210, y+20, 80, 50, "")
+		{
+			deemph_lbl.labelsize(11);
+		}
 
 		Fl_SevenSeg2 track_disp;
 		Fl_SevenSegTime time_disp;
@@ -27,6 +30,7 @@ class TrackTimeDisplay : public Fl_Widget
 			time_disp.set_colors(fg, bg);
 			track_lbl.labelcolor(fg);
 			time_lbl.labelcolor(fg);
+			deemph_lbl.labelcolor(fg);
 		}
 
 		void set_track_num(int tr)
@@ -49,6 +53,11 @@ class TrackTimeDisplay : public Fl_Widget
 				SEG_D | SEG_E | SEG_G); // c
 		}
 
+		void set_deemphasis(bool on)
+		{
+			deemph_lbl.label(on ? "De-Emphasis" : "");
+		}
+
 		void draw()
 		{
 			fl_rectf(x(), y(), w(), h(), bg);
@@ -58,6 +67,7 @@ class TrackTimeDisplay : public Fl_Widget
 	private:
 		Fl_Box track_lbl;
 		Fl_Box time_lbl;
+		Fl_Box deemph_lbl;
 		Fl_Color bg;
 };
 

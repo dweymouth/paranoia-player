@@ -180,12 +180,11 @@ void CdTransport::seek_next()
 void CdTransport::seek_lsn(lsn_t lsn)
 {
 	std::lock_guard<std::mutex> lk(this->drive_mut);
-	if (!this->paranoia) {
-		return;
-	}
 	this->data_out->clear();
 	this->read_cursor = lsn;
-	cdio_paranoia_seek(this->paranoia, this->read_cursor, SEEK_SET);
+	if (this->paranoia) {
+		cdio_paranoia_seek(this->paranoia, this->read_cursor, SEEK_SET);
+	}
 }
 
 void CdTransport::set_deemph_mode(DeemphMode mode)
