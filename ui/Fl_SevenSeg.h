@@ -92,7 +92,13 @@ class Fl_SevenSegTime : public Fl_Widget
 		{
 		}
 
-		void set_segments(char a_segs, char b_segs, bool colon, char c_segs, char d_segs);
+		void set_segments(char a_segs, char b_segs, bool colon, char c_segs, char d_segs)
+		{
+			min_digits.set_segments(a_segs, b_segs);
+			this->colon = colon;
+			sec_digits.set_segments(c_segs, d_segs);
+			damage(0xff);
+		}
 
 		void set_colors(Fl_Color lit_seg, Fl_Color bg) {
 			this->lit_seg = lit_seg;

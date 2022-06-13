@@ -6,12 +6,14 @@
 #include <FL/Fl_Widget.H>
 #include <FL/fl_draw.H>
 
+#include "player/cd_player.h"
 #include "ui/CdPlayerUI.h"
 
 #include <unistd.h>
 #include <thread>
 
 CdPlayerUI *playerUi;
+CdPlayer player(true);
 
 // test
 void update_digits()
@@ -31,10 +33,10 @@ void update_digits()
 int main(int argc, char **argv) {
 	Fl::lock();
 
-	playerUi = new CdPlayerUI(nullptr);
+	playerUi = new CdPlayerUI(&player);
 	playerUi->show(argc, argv);
 	Fl::unlock();
-	std::thread update_digits_thr(update_digits);
-	update_digits_thr.detach();
+	//std::thread update_digits_thr(update_digits);
+	//update_digits_thr.detach();
 	return Fl::run();
 }

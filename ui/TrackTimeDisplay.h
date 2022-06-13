@@ -29,6 +29,26 @@ class TrackTimeDisplay : public Fl_Widget
 			time_lbl.labelcolor(fg);
 		}
 
+		void set_track_num(int tr)
+		{
+			track_disp.set_digits(tr / 10, tr % 10);
+		}
+
+		void set_time(int min, int sec)
+		{
+			time_disp.set_time(min, sec);
+		}
+
+		void set_no_disc()
+		{
+			track_disp.set_segments(SEG_C | SEG_E | SEG_G /*n*/, SEG_C | SEG_D | SEG_E | SEG_G/*o*/);
+			time_disp.set_segments(
+				SEG_B | SEG_C | SEG_D | SEG_E | SEG_G, //d
+				SEG_C /*i*/, false /*no colon*/,
+				SEG_A | SEG_C | SEG_D | SEG_F | SEG_G, //s 
+				SEG_D | SEG_E | SEG_G); // c
+		}
+
 		void draw()
 		{
 			fl_rectf(x(), y(), w(), h(), bg);
