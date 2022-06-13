@@ -32,7 +32,10 @@ void print_time(int min, int sec)
 
 void print_status_msg()
 {
-	cout << "Player state is " << player.state << endl;
+	if (!player.have_disc) {
+		cout << "no disc" <<  endl;
+		return;
+	}
 	if (player.state == STOPPED) {
 		cout << "stopped" << endl;
 		return;
