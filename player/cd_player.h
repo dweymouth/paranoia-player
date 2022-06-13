@@ -65,6 +65,7 @@ class CdPlayer
 
 		void transport_status_callback(TransportStatus stat);
 		void calculate_track_time(lsn_t transport_cursor, int transport_tr);
+		void poll_end_of_playback();
 };
 
 #endif

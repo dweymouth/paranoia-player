@@ -19,8 +19,9 @@ void CdPlayer::transport_status_callback(TransportStatus stat)
 		if (this->state == STOPPING) {
 			this->state = STOPPED;
 		}
-		// TODO: spin up thread to check data buf
-		// and update state to stopped once buffer runs out
+		// transport stopped but we still have the last few seconds in the buffer
+		std::thread poll_playbk_th(std::bind(&CdPlayer::poll_end_of_playback, this));
+		poll_playbk_th.detach();
 	} else {
 		this->transport_cursor = stat.lsn_cursor;
 		calculate_track_time(stat.lsn_cursor, stat.track_num);
@@ -39,6 +40,20 @@ void CdPlayer::calculate_track_time(lsn_t transport_cursor, int transport_tr)
 		this->cur_track = transport_tr - 1;
 	}
 	this->track_time_sec = (playing_lsn - info.track_first_lsns[this->cur_track]) / 75.0;
+}
+
+void CdPlayer::poll_end_of_playback()
+{
+	while (this->state == PLAYING) {
+		if (this->data_buf.get_count() <= 0) {
+			this->audio_out.stop();
+			this->state = STOPPED;
+			break;
+		}
+		DiscInfo info = this->transport.disc_info;
+		calculate_track_time(info.disc_last_lsn, info.num_tracks);
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
 }
 
 bool CdPlayer::wait_and_load_disc()
@@ -83,14 +98,20 @@ void CdPlayer::seek_prev()
 {
 	if (!this->have_disc)
 		return;
-	this->transport.seek_prev();
+	if (this->cur_track <= 1)
+		this->transport.seek_track(1);
+	else if (this->track_time_sec > 2.)
+		this->transport.seek_track(this->cur_track);
+	else
+		this->transport.seek_track(this->cur_track - 1);
 }
 
 void CdPlayer::seek_next()
 {
 	if (!this->have_disc)
 		return;
-	this->transport.seek_next();
+	if (this->cur_track < this->transport.disc_info.num_tracks)
+		this->transport.seek_track(this->cur_track + 1);
 }
 
 void CdPlayer::stop()
