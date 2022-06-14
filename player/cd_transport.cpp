@@ -4,6 +4,14 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include <cdio/audio.h>
+
+typedef struct subq_control {
+	unsigned char four_ch: 1;
+	unsigned char data: 1;
+	unsigned char copy: 1;
+	unsigned char preemp: 1;
+} subq_control_t;
 
 
 CdTransport::CdTransport(CircularBlockingQueue<int16_t> *data_out)
@@ -78,6 +86,7 @@ void CdTransport::play()
 	int16_t cdio_readbuf[SAMPLES_PER_CD_FRAME];
 	int16_t deemph_buf[SAMPLES_PER_CD_FRAME];
 	this->playing = true;
+	int cur_track_local = -1;
 	while (this->playing && this->read_cursor < this->disc_info.disc_last_lsn) {
 		int tr = cdio_cddap_sector_gettrack(drive, this->read_cursor);
 		if (this->deemph_mode == AUTO) {
@@ -92,6 +101,19 @@ void CdTransport::play()
 				break;
 			}
 			cdio_read_audio_sector(this->cdio, &cdio_readbuf, this->read_cursor);
+			if (tr != cur_track_local && this->deemph_mode == AUTO && !this->deemph.enabled) {
+				// check Q subchannel for deemph flag
+				cdio_subchannel_t subchan;
+				bool success = cdio_audio_read_subchannel(this->cdio, &subchan) == DRIVER_OP_SUCCESS;
+				std::cout << "read subchannel succeeded = " << success << std::endl;
+				//if (subchan.control)
+				//	std::cout << "have a control bit set" << std::endl;
+				//std::cout << subchan.control << std::endl;
+				//bool preemph = subchan.control & 0x8;
+				//if (preemph)
+				//	this->deemph.enabled = true;
+			}
+			cur_track_local = tr;
 			p_readbuf = cdio_readbuf;
 			//p_readbuf = cdio_paranoia_read_limited(
 			//	paranoia, NULL, this->paranoia_read_retries);
