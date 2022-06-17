@@ -110,21 +110,27 @@ CdPlayerUI::CdPlayerUI(CdPlayer *player) :
 	}
 }
 
+void CdPlayerUI::disable_seek_bar()
+{
+	track_pos->value(0.);
+	if (track_pos->active())
+		track_pos->deactivate();
+}
+
 void CdPlayerUI::display_update_routine()
 {
 	while (true) {
 		Fl::lock();
 		if (!player->have_disc) {
 			disp->set_no_disc();
+			disable_seek_bar();
 		} else {
 			DiscInfo *info = player->get_disc_info();
 			PlayerState state = player->state;
 			switch (state) {
 			case STOPPING:
 			case STOPPED:
-				track_pos->value(0.);
-				if (track_pos->active())
-					track_pos->deactivate();
+				disable_seek_bar();
 				disp->set_track_num(info->num_tracks);
 				disp->set_time((int)info->disc_duration_secs() / 60, (int)info->disc_duration_secs() % 60);
 				disp->set_deemphasis(false);

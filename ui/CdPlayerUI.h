@@ -21,6 +21,7 @@ class CdPlayerUI : public Fl_Window
 		Fl_Button *next;
 	private:
 		void display_update_routine();
+		void disable_seek_bar();
 };
 
 #endif

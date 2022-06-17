@@ -48,9 +48,9 @@ class TrackTimeDisplay : public Fl_Widget
 			track_disp.set_segments(SEG_C | SEG_E | SEG_G /*n*/, SEG_C | SEG_D | SEG_E | SEG_G/*o*/);
 			time_disp.set_segments(
 				SEG_B | SEG_C | SEG_D | SEG_E | SEG_G, //d
-				SEG_C /*i*/, false /*no colon*/,
+				SEG_B | SEG_C /*I*/, false /*no colon*/,
 				SEG_A | SEG_C | SEG_D | SEG_F | SEG_G, //s 
-				SEG_D | SEG_E | SEG_G); // c
+				SEG_A | SEG_D | SEG_E | SEG_F); // C
 		}
 
 		void set_deemphasis(bool on)
