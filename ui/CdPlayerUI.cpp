@@ -5,19 +5,24 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Button.H>
+#include <FL/Fl_Sys_Menu_Bar.H>
 #include <FL/Fl_Slider.H>
 #include <FL/Fl_Widget.H>
 #include <FL/fl_draw.H>
 
 #include <chrono>
 #include <thread>
-#include <iostream>
 
 #include "Fl_SevenSeg.h"
 #include "TrackTimeDisplay.h"
 
+#ifdef __APPLE__
+#define MENU_BAR_HEIGHT 0
+#else
+#define MENU_BAR_HEIGHT 25
+#endif
+
 void play_callback(Fl_Widget *w, void *data) {
-	std::cout << "play callback" << std::endl;
 	CdPlayerUI *ui = (CdPlayerUI*)data;
 	if (!ui->player)
 		return;
@@ -40,41 +45,56 @@ void eject_callback(Fl_Widget *w, void *data) {
 
 void prev_callback(Fl_Widget *w, void *data) {
 	CdPlayerUI *ui = (CdPlayerUI*)data;
-	if (!ui->player)
-		return;
-	ui->player->seek_prev();
+	if (ui->player)
+		ui->player->seek_prev();
 }
 
 void next_callback(Fl_Widget *w, void *data) {
 	CdPlayerUI *ui = (CdPlayerUI*)data;
-	if (!ui->player)
-		return;
-	ui->player->seek_next();
+	if (ui->player)
+		ui->player->seek_next();
 }
 
 void track_pos_callback(Fl_Widget *w, void *data) {
 	CdPlayerUI *ui = (CdPlayerUI*)data;
-	if (!ui->player)
-		return;
-	ui->player->seek_trackpos(((Fl_Slider*)w)->value());
+	if (ui->player)
+		ui->player->seek_trackpos(((Fl_Slider*)w)->value());
+}
+
+void deemph_auto_callback(Fl_Widget *w, void *data) {
+	CdPlayerUI *ui = (CdPlayerUI*)data;
+	if (ui->player)
+		ui->player->set_deemph_mode(AUTO);
+}
+
+void deemph_on_callback(Fl_Widget *w, void *data) {
+	CdPlayerUI *ui = (CdPlayerUI*)data;
+	if (ui->player)
+		ui->player->set_deemph_mode(ON);
+}
+
+void deemph_off_callback(Fl_Widget *w, void *data) {
+	CdPlayerUI *ui = (CdPlayerUI*)data;
+	if (ui->player)
+		ui->player->set_deemph_mode(OFF);
 }
 
 CdPlayerUI::CdPlayerUI(CdPlayer *player) :
-	Fl_Window(325, 185)
+	Fl_Window(310, 185 + MENU_BAR_HEIGHT)
 {
 	this->player = player;
 
-	const int btn_row_y = 125;
+	const int btn_row_y = 125 + MENU_BAR_HEIGHT;
 	const int btn_pad = 10;
 	const int btn_w = 50;
 
 	this->color(FL_DARK2);
 
-	disp = new TrackTimeDisplay(10, 10, 290, 80);
+	disp = new TrackTimeDisplay(10, 10 + MENU_BAR_HEIGHT, 290, 80);
 	disp->set_colors(FL_DARK_GREEN, fl_darker(FL_DARK3));
 	disp->set_no_disc();
 
-	track_pos = new Fl_Slider(10, 100, 290, 20);
+	track_pos = new Fl_Slider(10, 100 + MENU_BAR_HEIGHT, 290, 20);
 	track_pos->type(FL_HOR_NICE_SLIDER);
 	track_pos->color(FL_DARK2, FL_DARK2);
 	track_pos->range(0., 1.);
@@ -88,7 +108,6 @@ CdPlayerUI::CdPlayerUI(CdPlayer *player) :
 	play = new Fl_Button(btn_pad*2+btn_w, btn_row_y, btn_w, 50, "@+3>");
 	play->color(FL_DARK2);
 	play->callback(play_callback, this);
-	//play->box(FL_ROUND_UP_BOX);
 
 	eject = new Fl_Button(btn_pad*3+btn_w*2, btn_row_y, btn_w, 50, "@+38|>");
 	eject->color(FL_DARK2);
@@ -102,12 +121,23 @@ CdPlayerUI::CdPlayerUI(CdPlayer *player) :
 	next = new Fl_Button(btn_pad*5+btn_w*4, btn_row_y, btn_w, 50, "@+2>|");
 	next->color(FL_DARK2);
 	next->callback(next_callback, this);
+
+	setup_menu_bar();
+
 	this->end();
 
 	if (player) {
 		std::thread update_thr(std::bind(&CdPlayerUI::display_update_routine, this));
 		update_thr.detach();
 	}
+}
+
+void CdPlayerUI::setup_menu_bar()
+{
+	Fl_Sys_Menu_Bar *menubar = new Fl_Sys_Menu_Bar(0, 0, w(), MENU_BAR_HEIGHT);
+	menubar->add("Options/De-Emphasis/Auto", 0, deemph_auto_callback, this, FL_MENU_RADIO | FL_MENU_VALUE);
+	menubar->add("Options/De-Emphasis/On", 0, deemph_on_callback, this, FL_MENU_RADIO);
+	menubar->add("Options/De-Emphasis/Off", 0, deemph_off_callback, this, FL_MENU_RADIO);
 }
 
 void CdPlayerUI::disable_seek_bar()

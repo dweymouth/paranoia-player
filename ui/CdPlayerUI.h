@@ -22,6 +22,7 @@ class CdPlayerUI : public Fl_Window
 	private:
 		void display_update_routine();
 		void disable_seek_bar();
+		void setup_menu_bar();
 };
 
 #endif
